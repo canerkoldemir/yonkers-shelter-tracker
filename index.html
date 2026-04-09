@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1B4F8A">
+<title>Yonkers Animal Shelter — Walk Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS — Accessibility AA Contrast
+═══════════════════════════════════════════════════ */
+:root {
+  --brand:        #1B4F8A;
+  --brand-hover:  #163F6F;
+  --brand-light:  #EBF2FB;
+  --success:      #1E7B40;
+  --success-bg:   #E8F5EE;
+  --warning:      #B45309;
+  --warning-bg:   #FEF3C7;
+  --danger:       #B91C1C;
+  --danger-bg:    #FEE2E2;
+  --neutral:      #374151;
+  --neutral-bg:   #F3F4F6;
+  --text-primary: #111827;
+  --text-secondary:#4B5563;
+  --text-muted:   #6B7280;
+  --border:       #D1D5DB;
+  --bg-page:      #F9FAFB;
+  --bg-card:      #FFFFFF;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:    0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:    0 10px 30px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.08);
+  --radius-sm:    8px;
+  --radius-md:    14px;
+  --radius-lg:    20px;
+  --radius-xl:    28px;
+  --transition:   160ms ease;
+  --nav-h:        72px;
+}
+
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  min-height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, select, input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; border: none; background: none; }
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+a { color: var(--brand); }
+
+/* ═══════════════════════════════════════════════════
+   SCREENS — SPA router
+═══════════════════════════════════════════════════ */
+.screen { display: none; min-height: 100dvh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ═══════════════════════════════════════════════════
+   ── SCREEN: LOGIN
+═══════════════════════════════════════════════════ */
+#screen-login {
+  background: linear-gradient(165deg, #1B4F8A 0%, #163F6F 55%, #0E2A4A 100%);
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  gap: 28px;
+}
+
+.login-logo {
+  text-align: center;
+  color: white;
+}
+.login-logo svg { filter: drop-shadow(0 2px 8px rgba(0,0,0,.3)); }
+.login-logo h1  { font-size: 26px; font-weight: 800; margin-top: 14px; letter-spacing: -0.3px; }
+.login-logo p   { font-size: 16px; opacity: 0.75; margin-top: 4px; }
+
+.login-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.login-card h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.login-card p {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.vol-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.vol-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: var(--radius-md);
+  border: 2.5px solid var(--border);
+  background: var(--bg-page);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: all var(--transition);
+  min-height: 80px;
+  cursor: pointer;
+}
+.vol-btn:hover  { border-color: var(--brand); background: var(--brand-light); }
+.vol-btn.chosen { border-color: var(--brand); background: var(--brand-light); color: var(--brand); }
+.vol-btn .vol-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+}
+.vol-btn.chosen .vol-avatar { background: var(--brand); }
+
+.login-divider {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text-muted); font-size: 14px; margin-bottom: 16px;
+}
+.login-divider::before,
+.login-divider::after {
+  content: ''; flex: 1;
+  height: 1px; background: var(--border);
+}
+
+.custom-name-row {
+  display: flex; gap: 8px; margin-bottom: 20px;
+}
+.custom-name-row input {
+  flex: 1;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 17px;
+  color: var(--text-primary);
+  background: white;
+  transition: border-color var(--transition);
+}
+.custom-name-row input:focus { border-color: var(--brand); }
+.custom-name-row input::placeholder { color: var(--text-muted); }
+.custom-name-row button {
+  background: var(--brand);
+  color: white;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 17px;
+  font-weight: 700;
+  transition: background var(--transition);
+  min-width: 54px;
+}
+.custom-name-row button:hover { background: var(--brand-hover); }
+
+#btn-start-shift {
+  width: 100%;
+  background: var(--brand);
+  color: white;
+  border-radius: var(--radius-md);
+  padding: 18px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  transition: background var(--transition), transform var(--transition), opacity var(--transition);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 64px;
+}
+#btn-start-shift:hover:not(:disabled)   { background: var(--brand-hover); transform: translateY(-1px); }
+#btn-start-shift:active:not(:disabled)  { transform: scale(0.98); }
+#btn-start-shift:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+.shift-note {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  color: white;
+  opacity: 0.65;
+}
+
+/* ═══════════════════════════════════════════════════
+   ── APP SHELL (all post-login screens)
+═══════════════════════════════════════════════════ */
+.app-header {
+  background: var(--brand);
+  color: white;
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: var(--shadow-sm);
+}
+.app-header .back-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  color: white;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+.app-header .back-btn:hover { background: rgba(255,255,255,.18); }
+.app-header .header-info { flex: 1; min-width: 0; }
+.app-header h1 { font-size: 20px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.app-header .header-sub { font-size: 13px; opacity: 0.75; }
+.app-header .clock-badge {
+  background: rgba(255,255,255,.2);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  max-width: 480px; margin: 0 auto;
+  background: white;
+  border-top: 1px solid var(--border);
+  display: flex;
+  height: var(--nav-h);
+  z-index: 50;
+  box-shadow: 0 -2px 10px rgba(0,0,0,.08);
+}
+.nav-btn {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color var(--transition);
+  position: relative;
+  padding: 6px 4px;
+}
+.nav-btn svg { transition: transform var(--transition); }
+.nav-btn:hover, .nav-btn.active {
+  color: var(--brand);
+}
+.nav-btn.active svg { transform: scale(1.1); }
+.nav-btn .nav-badge {
+  position: absolute;
+  top: 8px; right: calc(50% - 18px);
+  background: var(--danger);
+  color: white;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+  border: 2px solid white;
+}
+
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: calc(var(--nav-h) + 12px);
+}
+
+/* ═══════════════════════════════════════════════════
+   ── SCREEN: DASHBOARD
+═══════════════════════════════════════════════════ */
+#screen-dashboard { background: var(--bg-page); }
+
+/* Volunteer strip */
+.vol-strip {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vol-strip .vol-info { display: flex; align-items: center; gap: 10px; }
+.vol-strip .vol-avatar2 {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800;
+  flex-shrink: 0;
+}
+.vol-strip .vol-name  { font-size: 17px; font-weight: 700; }
+.vol-strip .vol-shift { font-size: 13px; color: var(--text-muted); }
+.vol-strip .change-vol-btn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-light);
+  transition: background var(--transition);
+}
+.vol-strip .change-vol-btn:hover { background: #D6E9F8; }
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+.stat-tile {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid transparent;
+}
+.stat-tile .s-num  { font-size: 36px; font-weight: 900; line-height: 1; }
+.stat-tile .s-lbl  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+.stat-tile.s-wait  { border-color: #E5E7EB; }
+.stat-tile.s-wait  .s-num { color: var(--neutral); }
+.stat-tile.s-wait  .s-lbl { color: var(--text-muted); }
+.stat-tile.s-out   { border-color: #FDE68A; }
+.stat-tile.s-out   .s-num { color: var(--warning); }
+.stat-tile.s-out   .s-lbl { color: var(--warning); }
+.stat-tile.s-done  { border-color: #BBF7D0; }
+.stat-tile.s-done  .s-num { color: var(--success); }
+.stat-tile.s-done  .s-lbl { color: var(--success); }
+
+/* Alert bar */
+.alert-bar {
+  margin: 0 16px 10px;
+  background: var(--danger-bg);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--danger);
+}
+.alert-bar svg { flex-shrink: 0; }
+.alert-bar.hidden { display: none; }
+
+/* Filter tabs */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  padding: 2px 16px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: white;
+  transition: all var(--transition);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.filter-chip:hover { border-color: var(--brand); color: var(--brand); }
+.filter-chip.active { background: var(--brand); border-color: var(--brand); color: white; }
+.filter-chip .chip-count {
+  background: rgba(255,255,255,.3);
+  border-radius: 10px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+.filter-chip:not(.active) .chip-count { background: var(--neutral-bg); color: var(--text-muted); }
+
+/* Section heading */
+.section-heading {
+  padding: 4px 16px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-muted);
+}
+
+/* Dog cards — large, single column */
+.dog-list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+
+.dog-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+.dog-card:hover  { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.dog-card:active { transform: scale(0.988); }
+
+/* status left accent */
+.dog-card::before {
+  content: '';
+  display: block;
+  height: 6px;
+  border-radius: 0;
+}
+.dog-card.s-waiting::before { background: var(--border); }
+.dog-card.s-out::before     { background: linear-gradient(90deg, #F59E0B, #EF8C05); }
+.dog-card.s-done::before    { background: linear-gradient(90deg, #22C55E, #16A34A); }
+.dog-card.s-overdue::before { background: linear-gradient(90deg, #EF4444, #DC2626); animation: pulse-bar 1s infinite; }
+
+.dog-card.s-out     { border-color: #FDE68A; }
+.dog-card.s-done    { border-color: #BBF7D0; }
+.dog-card.s-overdue { border-color: #FECACA; }
+
+@keyframes pulse-bar {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.dog-card-body {
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dog-icon {
+  width: 60px; height: 60px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 32px;
+}
+.s-waiting .dog-icon { background: var(--neutral-bg); }
+.s-out     .dog-icon { background: var(--warning-bg); }
+.s-done    .dog-icon { background: var(--success-bg); }
+.s-overdue .dog-icon { background: var(--danger-bg); }
+
+.dog-info { flex: 1; min-width: 0; }
+.dog-name  { font-size: 22px; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+.dog-breed { font-size: 14px; color: var(--text-muted); margin-top: 1px; }
+.dog-meta  { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+
+.dog-type-pill {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.pill-run     { background: #DBEAFE; color: #1D4ED8; }
+.pill-outside { background: #FEF3C7; color: #92400E; }
+
+.dog-kennel-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--neutral-bg);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.dog-status-line {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.s-waiting .dog-status-line { color: var(--text-muted); }
+.s-out     .dog-status-line { color: var(--warning); }
+.s-done    .dog-status-line { color: var(--success); }
+.s-overdue .dog-status-line { color: var(--danger); }
+
+.dog-action-area {
+  padding: 0 14px 14px;
+}
+.dog-action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 800;
+  transition: background var(--transition), transform var(--transition);
+  min-height: 58px;
+  cursor: pointer;
+}
+.dog-action-btn:active { transform: scale(0.97); }
+.btn-walk   { background: var(--brand);   color: white; }
+.btn-walk:hover   { background: var(--brand-hover); }
+.btn-return { background: var(--warning); color: white; }
+.btn-return:hover { background: #92400E; }
+.btn-done   { background: var(--success-bg); color: var(--success); cursor: default; }
+.btn-overdue { background: var(--danger); color: white; animation: pulse-btn .8s infinite; }
+@keyframes pulse-btn {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state svg  { margin-bottom: 14px; opacity: 0.4; }
+.empty-state p    { font-size: 17px; }
+
+/* ═══════════════════════════════════════════════════
+   ── SCREEN: ACTIVE WALK (Full-screen overlay feel)
+═══════════════════════════════════════════════════ */
+#screen-walk { background: var(--bg-page); }
+
+.walk-dog-hero {
+  background: linear-gradient(135deg, var(--brand), #163F6F);
+  color: white;
+  padding: 28px 24px 32px;
+  text-align: center;
+}
+.walk-dog-hero .dog-icon-lg {
+  width: 80px; height: 80px;
+  background: rgba(255,255,255,.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  margin: 0 auto 14px;
+}
+.walk-dog-hero h2 { font-size: 32px; font-weight: 900; line-height: 1; }
+.walk-dog-hero p  { font-size: 17px; opacity: .75; margin-top: 4px; }
+
+.timer-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  margin: -20px 16px 0;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.timer-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); margin-bottom: 8px; }
+.timer-display {
+  font-size: 72px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--brand);
+  transition: color .3s;
+}
+.timer-display.warn    { color: var(--warning); }
+.timer-display.overdue { color: var(--danger); animation: pulse-btn .6s infinite; }
+.timer-vol  { font-size: 16px; color: var(--text-muted); margin-top: 10px; font-weight: 600; }
+
+.walk-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 16px 0;
+}
+.detail-tile {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.detail-tile .dt-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.detail-tile .dt-value { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.detail-tile .dt-value.gps-active { color: var(--success); }
+
+.notes-section { padding: 16px 16px 0; }
+.notes-section label { font-size: 15px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 8px; }
+.notes-section textarea {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 17px;
+  resize: none;
+  line-height: 1.5;
+  color: var(--text-primary);
+  transition: border-color var(--transition);
+  background: white;
+}
+.notes-section textarea:focus { border-color: var(--brand); }
+.notes-section textarea::placeholder { color: var(--text-muted); }
+
+.walk-actions { padding: 16px; }
+.btn-return-large {
+  width: 100%;
+  background: var(--success);
+  color: white;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  font-size: 22px;
+  font-weight: 900;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  transition: background var(--transition), transform var(--transition);
+  min-height: 72px;
+  cursor: pointer;
+}
+.btn-return-large:hover  { background: #166534; }
+.btn-return-large:active { transform: scale(0.97); }
+
+/* ═══════════════════════════════════════════════════
+   ── SCREEN: QR CODES
+═══════════════════════════════════════════════════ */
+#screen-qr { background: var(--bg-page); }
+.qr-instruction {
+  background: var(--brand-light);
+  border-left: 4px solid var(--brand);
+  margin: 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--brand);
+  font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+}
+.qr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px;
+}
+.qr-tile {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 18px 12px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  border: 2px solid var(--border);
+}
+.qr-tile canvas,
+.qr-tile img { display: block; margin: 0 auto 10px; border-radius: 6px; }
+.qr-dog-name  { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.qr-dog-id    { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+.qr-dog-kennel{ font-size: 13px; color: var(--brand); font-weight: 700; margin-top: 4px; }
+
+.print-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: calc(100% - 32px);
+  margin: 16px;
+  padding: 16px;
+  background: var(--brand);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 800;
+  transition: background var(--transition);
+  min-height: 58px;
+  cursor: pointer;
+}
+.print-btn:hover { background: var(--brand-hover); }
+
+/* ═══════════════════════════════════════════════════
+   ── SCREEN: REPORT
+═══════════════════════════════════════════════════ */
+#screen-report { background: var(--bg-page); }
+
+.report-summary-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 16px 16px 8px;
+}
+.report-tile {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 18px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.report-tile .rt-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.report-tile .rt-value { font-size: 28px; font-weight: 900; color: var(--text-primary); }
+.report-tile .rt-sub   { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+.report-section { padding: 8px 16px 4px; }
+.report-section-title { font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+
+.walk-log-card {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-left: 4px solid var(--success);
+}
+.walk-log-card.in-progress { border-left-color: var(--warning); }
+.walk-log-card .wl-icon  { font-size: 28px; flex-shrink: 0; }
+.walk-log-card .wl-info  { flex: 1; min-width: 0; }
+.walk-log-card .wl-name  { font-size: 18px; font-weight: 800; }
+.walk-log-card .wl-vol   { font-size: 14px; color: var(--text-muted); margin-top: 1px; }
+.walk-log-card .wl-time  { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+.walk-log-card .wl-dur   { font-size: 18px; font-weight: 800; color: var(--success); flex-shrink: 0; }
+.walk-log-card.in-progress .wl-dur { color: var(--warning); }
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: calc(100% - 32px);
+  margin: 16px;
+  padding: 16px;
+  background: var(--success);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 800;
+  transition: background var(--transition);
+  min-height: 58px;
+  cursor: pointer;
+}
+.export-btn:hover { background: #166534; }
+
+/* ═══════════════════════════════════════════════════
+   ── MODALS
+═══════════════════════════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 200;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-sheet {
+  background: white;
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 0 0;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp .22s ease;
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+.modal-sheet.center-modal {
+  border-radius: 24px;
+  margin: 20px;
+  width: calc(100% - 40px);
+  max-width: 440px;
+}
+@keyframes slideUp {
+  from { transform: translateY(50px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.modal-body { padding: 0 24px 28px; }
+.modal-title { font-size: 24px; font-weight: 900; color: var(--text-primary); margin-bottom: 6px; }
+.modal-sub   { font-size: 16px; color: var(--text-muted); margin-bottom: 22px; }
+
+.modal-dog-hero {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--brand-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.modal-dog-hero .mh-icon { font-size: 44px; }
+.modal-dog-hero .mh-name { font-size: 26px; font-weight: 900; color: var(--brand); line-height: 1; }
+.modal-dog-hero .mh-breed{ font-size: 15px; color: var(--text-muted); margin-top: 2px; }
+
+.confirm-details {
+  background: var(--neutral-bg);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.confirm-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.confirm-row:last-child { border-bottom: none; }
+.confirm-row .cr-label { font-size: 15px; color: var(--text-muted); font-weight: 600; }
+.confirm-row .cr-value { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+
+.modal-btn {
+  width: 100%;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  font-weight: 900;
+  transition: background var(--transition), transform var(--transition);
+  min-height: 64px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.modal-btn:active { transform: scale(0.97); }
+.modal-btn-primary  { background: var(--brand);   color: white; }
+.modal-btn-primary:hover  { background: var(--brand-hover); }
+.modal-btn-danger   { background: var(--danger);  color: white; }
+.modal-btn-danger:hover   { background: #991B1B; }
+.modal-btn-success  { background: var(--success); color: white; }
+.modal-btn-success:hover  { background: #166534; }
+.modal-btn-ghost    { background: var(--neutral-bg); color: var(--text-muted); font-size: 17px; }
+.modal-btn-ghost:hover    { background: var(--border); }
+
+/* ═══════════════════════════════════════════════════
+   ── TOAST NOTIFICATION
+═══════════════════════════════════════════════════ */
+#toast {
+  position: fixed;
+  top: 80px; left: 50%;
+  transform: translateX(-50%) translateY(-30px);
+  opacity: 0;
+  pointer-events: none;
+  background: var(--text-primary);
+  color: white;
+  padding: 14px 22px;
+  border-radius: 100px;
+  font-size: 16px;
+  font-weight: 700;
+  z-index: 999;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+  transition: opacity .25s, transform .25s;
+  display: flex; align-items: center; gap: 8px;
+  max-width: calc(100vw - 40px);
+}
+#toast.success { background: var(--success); }
+#toast.warning { background: var(--warning); }
+#toast.danger  { background: var(--danger);  }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+/* ═══════════════════════════════════════════════════
+   PRINT STYLES
+═══════════════════════════════════════════════════ */
+@media print {
+  .app-header, .bottom-nav, .vol-strip, .stats-row,
+  .filter-row, .section-heading, .print-btn, .qr-instruction { display: none !important; }
+  body { max-width: 100%; background: white; }
+  .qr-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0; }
+  .qr-tile { border: 1px solid #ccc; break-inside: avoid; }
+  #screen-qr { display: flex !important; }
+  .page-content { padding-bottom: 0; overflow: visible; }
+}
+
+/* ═══════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════ */
+.hidden { display: none !important; }
+.sr-only { position: absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ SCREEN: LOGIN ═══════════════════ -->
+<section id="screen-login" class="screen active" role="main" aria-label="Volunteer Login">
+  <div class="login-logo">
+    <!-- Paw SVG icon -->
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="36" cy="36" r="36" fill="rgba(255,255,255,0.15)"/>
+      <ellipse cx="23" cy="22" rx="6" ry="8" fill="white" opacity=".9"/>
+      <ellipse cx="49" cy="22" rx="6" ry="8" fill="white" opacity=".9"/>
+      <ellipse cx="14" cy="38" rx="5" ry="7" fill="white" opacity=".9"/>
+      <ellipse cx="58" cy="38" rx="5" ry="7" fill="white" opacity=".9"/>
+      <path d="M36 30c-8 0-15 6-15 14 0 5 3 9 8 10.5l7 3 7-3c5-1.5 8-5.5 8-10.5 0-8-7-14-15-14z" fill="white"/>
+    </svg>
+    <h1>Yonkers Animal Shelter</h1>
+    <p>Volunteer Walk Tracker</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Who's volunteering today?</h2>
+    <p>Select your name to begin the shift</p>
+
+    <div class="vol-grid" id="vol-grid" role="group" aria-label="Select volunteer">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="login-divider">or type your name</div>
+
+    <div class="custom-name-row">
+      <label for="custom-name" class="sr-only">Enter your name</label>
+      <input type="text" id="custom-name" placeholder="Your name..." autocomplete="off" spellcheck="false" maxlength="30">
+      <button id="btn-add-name" aria-label="Use this name">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    </div>
+
+    <button id="btn-start-shift" disabled aria-label="Start your shift">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Start Shift
+    </button>
+  </div>
+
+  <p class="shift-note">Volunteer shift: 11:00 AM – 3:00 PM</p>
+</section>
+
+<!-- ═══════════════════ SCREEN: DASHBOARD ═══════════════════ -->
+<section id="screen-dashboard" class="screen" role="main" aria-label="Dog Dashboard">
+  <header class="app-header">
+    <div class="header-info">
+      <h1>Walk Tracker</h1>
+      <div class="header-sub">Yonkers Animal Shelter</div>
+    </div>
+    <div class="clock-badge" id="clock" aria-live="polite" aria-label="Current time">--:--</div>
+  </header>
+
+  <!-- Volunteer strip -->
+  <div class="vol-strip">
+    <div class="vol-info">
+      <div class="vol-avatar2" id="vol-avatar2" aria-hidden="true">?</div>
+      <div>
+        <div class="vol-name" id="vol-name-display">—</div>
+        <div class="vol-shift">Shift: 11 AM – 3 PM</div>
+      </div>
+    </div>
+    <button class="change-vol-btn" id="btn-change-vol" aria-label="Change volunteer">Change</button>
+  </div>
+
+  <!-- Alert bar for overdue dogs -->
+  <div class="alert-bar hidden" id="alert-bar" role="alert" aria-live="assertive">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span id="alert-bar-text">Dog out over 45 minutes!</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" role="region" aria-label="Walk statistics">
+    <div class="stat-tile s-wait">
+      <div class="s-num" id="stat-waiting">0</div>
+      <div class="s-lbl">Not Walked</div>
+    </div>
+    <div class="stat-tile s-out">
+      <div class="s-num" id="stat-out">0</div>
+      <div class="s-lbl">Out Now</div>
+    </div>
+    <div class="stat-tile s-done">
+      <div class="s-num" id="stat-done">0</div>
+      <div class="s-lbl">Done</div>
+    </div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-row" role="group" aria-label="Filter dogs">
+    <button class="filter-chip active" data-filter="all" aria-pressed="true">
+      All <span class="chip-count" id="fc-all">0</span>
+    </button>
+    <button class="filter-chip" data-filter="waiting" aria-pressed="false">
+      Not Walked <span class="chip-count" id="fc-waiting">0</span>
+    </button>
+    <button class="filter-chip" data-filter="out" aria-pressed="false">
+      Out Now <span class="chip-count" id="fc-out">0</span>
+    </button>
+    <button class="filter-chip" data-filter="done" aria-pressed="false">
+      Done <span class="chip-count" id="fc-done">0</span>
+    </button>
+    <button class="filter-chip" data-filter="run" aria-pressed="false">
+      Run Dogs
+    </button>
+    <button class="filter-chip" data-filter="outside" aria-pressed="false">
+      Outside Dogs
+    </button>
+  </div>
+
+  <div class="section-heading" id="section-heading">All Dogs</div>
+
+  <div class="page-content">
+    <div class="dog-list" id="dog-list" role="list" aria-label="Dog list"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SCREEN: ACTIVE WALK ═══════════════════ -->
+<section id="screen-walk" class="screen" role="main" aria-label="Active Walk">
+  <header class="app-header">
+    <button class="back-btn" id="btn-walk-back" aria-label="Back to dashboard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-info">
+      <h1>Walk in Progress</h1>
+      <div class="header-sub" id="walk-header-sub">—</div>
+    </div>
+  </header>
+
+  <div class="page-content">
+    <div class="walk-dog-hero">
+      <div class="dog-icon-lg" id="walk-dog-icon" aria-hidden="true">🐶</div>
+      <h2 id="walk-dog-name">—</h2>
+      <p id="walk-dog-breed">—</p>
+    </div>
+
+    <div class="timer-card">
+      <div class="timer-label">Walk Duration</div>
+      <div class="timer-display" id="walk-timer" role="timer" aria-live="polite" aria-label="Walk duration">00:00</div>
+      <div class="timer-vol" id="walk-timer-vol">—</div>
+    </div>
+
+    <div class="walk-details-grid">
+      <div class="detail-tile">
+        <div class="dt-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Started
+        </div>
+        <div class="dt-value" id="walk-start-time">—</div>
+      </div>
+      <div class="detail-tile">
+        <div class="dt-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Distance
+        </div>
+        <div class="dt-value" id="walk-distance">— ft</div>
+      </div>
+      <div class="detail-tile">
+        <div class="dt-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Volunteer
+        </div>
+        <div class="dt-value" id="walk-volunteer-detail">—</div>
+      </div>
+      <div class="detail-tile">
+        <div class="dt-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01M12 12h.01"/></svg>
+          Kennel
+        </div>
+        <div class="dt-value" id="walk-kennel">—</div>
+      </div>
+    </div>
+
+    <div class="notes-section">
+      <label for="walk-notes">Walk Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+      <textarea id="walk-notes" rows="3" placeholder="Any observations? Behavior, health, mood..." maxlength="300"></textarea>
+    </div>
+
+    <div class="walk-actions">
+      <button class="btn-return-large" id="btn-return-dog">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Return Dog to Kennel
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ SCREEN: QR CODES ═══════════════════ -->
+<section id="screen-qr" class="screen" role="main" aria-label="QR Codes">
+  <header class="app-header">
+    <div class="header-info">
+      <h1>Dog QR Tags</h1>
+      <div class="header-sub">Print & attach to kennels</div>
+    </div>
+    <div class="clock-badge" id="clock-qr" aria-hidden="true">--:--</div>
+  </header>
+  <div class="page-content">
+    <div class="qr-instruction" role="note">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Print these tags and attach one to each dog's kennel door
+    </div>
+    <div class="qr-grid" id="qr-grid" aria-label="QR codes for each dog"></div>
+    <button class="print-btn" id="btn-print" aria-label="Print all QR codes">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print All QR Tags
+    </button>
+  </div>
+</section>
+
+<!-- ═══════════════════ SCREEN: REPORT ═══════════════════ -->
+<section id="screen-report" class="screen" role="main" aria-label="Daily Report">
+  <header class="app-header">
+    <div class="header-info">
+      <h1>Daily Report</h1>
+      <div class="header-sub" id="report-date-sub">Today</div>
+    </div>
+    <div class="clock-badge" id="clock-report" aria-hidden="true">--:--</div>
+  </header>
+  <div class="page-content">
+    <div class="report-summary-row" id="report-summary" role="region" aria-label="Summary statistics"></div>
+    <div class="report-section">
+      <div class="report-section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Walk Log
+      </div>
+      <div id="report-log"></div>
+    </div>
+    <button class="export-btn" id="btn-export" aria-label="Export report as text">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export / Share Report
+    </button>
+  </div>
+</section>
+
+<!-- ═══════════════════ BOTTOM NAV ═══════════════════ -->
+<nav class="bottom-nav hidden" id="bottom-nav" role="navigation" aria-label="Main navigation">
+  <button class="nav-btn active" id="nav-home" data-screen="dashboard" aria-label="Home" aria-current="page">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+    <span class="nav-badge hidden" id="nav-badge-home" aria-label="Overdue dogs"></span>
+  </button>
+  <button class="nav-btn" id="nav-active" data-screen="active-walks" aria-label="Active walks">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Active
+    <span class="nav-badge hidden" id="nav-badge-active" aria-label="Dogs currently out"></span>
+  </button>
+  <button class="nav-btn" id="nav-qr" data-screen="qr" aria-label="QR Tags">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor"/><rect x="16" y="5" width="3" height="3" fill="currentColor"/><rect x="5" y="16" width="3" height="3" fill="currentColor"/><line x1="14" y1="14" x2="14" y2="14.01"/><line x1="17" y1="14" x2="17" y2="14.01"/><line x1="20" y1="14" x2="20" y2="14.01"/><line x1="14" y1="17" x2="14" y2="17.01"/><line x1="17" y1="17" x2="20" y2="17"/><line x1="20" y1="20" x2="20" y2="20.01"/><line x1="14" y1="20" x2="17" y2="20"/></svg>
+    QR Tags
+  </button>
+  <button class="nav-btn" id="nav-report" data-screen="report" aria-label="Daily report">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Report
+  </button>
+</nav>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+<!-- Start Walk Confirm -->
+<div class="modal-overlay" id="modal-start" role="dialog" aria-modal="true" aria-labelledby="mstart-title">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div id="mstart-dog-hero" class="modal-dog-hero"></div>
+      <h2 class="modal-title" id="mstart-title">Start Walk?</h2>
+      <p class="modal-sub">Confirm you're taking this dog out</p>
+      <div class="confirm-details">
+        <div class="confirm-row">
+          <span class="cr-label">Volunteer</span>
+          <span class="cr-value" id="mstart-vol">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="cr-label">Time</span>
+          <span class="cr-value" id="mstart-time">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="cr-label">Kennel</span>
+          <span class="cr-value" id="mstart-kennel">—</span>
+        </div>
+      </div>
+      <button class="modal-btn modal-btn-primary" id="mstart-confirm">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Yes, Start Walk
+      </button>
+      <button class="modal-btn modal-btn-ghost" id="mstart-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Return Dog Confirm -->
+<div class="modal-overlay" id="modal-return" role="dialog" aria-modal="true" aria-labelledby="mreturn-title">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div id="mreturn-dog-hero" class="modal-dog-hero"></div>
+      <h2 class="modal-title" id="mreturn-title">Return Dog?</h2>
+      <p class="modal-sub">Confirm you're returning this dog to their kennel</p>
+      <div class="confirm-details">
+        <div class="confirm-row">
+          <span class="cr-label">Walked by</span>
+          <span class="cr-value" id="mreturn-vol">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="cr-label">Duration</span>
+          <span class="cr-value" id="mreturn-dur">—</span>
+        </div>
+        <div class="confirm-row">
+          <span class="cr-label">Return to</span>
+          <span class="cr-value" id="mreturn-kennel">—</span>
+        </div>
+      </div>
+      <button class="modal-btn modal-btn-success" id="mreturn-confirm">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Yes, Dog is Back
+      </button>
+      <button class="modal-btn modal-btn-ghost" id="mreturn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── DATA ──────────────────────────────────────────── */
+const VOLUNTEERS = ['Sarah M.', 'James T.', 'Maria L.', 'David K.', 'Emma R.', 'Tom B.'];
+
+const DOGS = [
+  { id:1,  name:'Buddy',   breed:'Golden Retriever', type:'run',     kennel:'A-1',  emoji:'🐶' },
+  { id:2,  name:'Luna',    breed:'Labrador Mix',     type:'run',     kennel:'A-2',  emoji:'🦮' },
+  { id:3,  name:'Max',     breed:'German Shepherd',  type:'run',     kennel:'A-3',  emoji:'🐕' },
+  { id:4,  name:'Bella',   breed:'Beagle',           type:'outside', kennel:'B-1',  emoji:'🐩' },
+  { id:5,  name:'Charlie', breed:'Pit Bull Mix',     type:'run',     kennel:'A-4',  emoji:'🐶' },
+  { id:6,  name:'Daisy',   breed:'Boxer',            type:'outside', kennel:'B-2',  emoji:'🐕' },
+  { id:7,  name:'Rocky',   breed:'Husky',            type:'run',     kennel:'A-5',  emoji:'🐺' },
+  { id:8,  name:'Molly',   breed:'Chihuahua Mix',    type:'outside', kennel:'B-3',  emoji:'🐩' },
+  { id:9,  name:'Duke',    breed:'Rottweiler',       type:'run',     kennel:'A-6',  emoji:'🐕' },
+  { id:10, name:'Sadie',   breed:'Border Collie',    type:'outside', kennel:'B-4',  emoji:'🐶' },
+  { id:11, name:'Bear',    breed:'Shih Tzu',         type:'run',     kennel:'A-7',  emoji:'🐩' },
+  { id:12, name:'Coco',    breed:'Dachshund Mix',    type:'outside', kennel:'B-5',  emoji:'🐾' },
+];
+
+/* ── STATE ─────────────────────────────────────────── */
+const state = {
+  volunteer: '',
+  filter: 'all',
+  walks: {},    // dogId -> { volunteer, startTime, endTime, duration, notes, distance }
+  history: [],  // [ { dogId, dog, volunteer, startTime, endTime, duration, notes, distance } ]
+  activeWalkDogId: null,
+  timerInterval: null,
+  gpsInterval: null,
+  gpsCoords: [],
+  clockIntervals: [],
+  pendingActionDogId: null,
+};
+
+/* Persist to localStorage */
+function saveState() {
+  try {
+    localStorage.setItem('shelter-walks',   JSON.stringify(state.walks));
+    localStorage.setItem('shelter-history', JSON.stringify(state.history));
+    localStorage.setItem('shelter-vol',     state.volunteer);
+  } catch(e) { /* quota */ }
+}
+
+function loadState() {
+  try {
+    const w = localStorage.getItem('shelter-walks');
+    const h = localStorage.getItem('shelter-history');
+    const v = localStorage.getItem('shelter-vol');
+    if (w) state.walks   = JSON.parse(w);
+    if (h) state.history = JSON.parse(h);
+    if (v) state.volunteer = v;
+  } catch(e) { /* corrupt data */ }
+}
+
+/* ── HELPERS ───────────────────────────────────────── */
+function fmt12(ts) {
+  return new Date(ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+function fmtClock(d) {
+  return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+function fmtDur(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (m >= 60) {
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return `${h}h ${rm}m`;
+  }
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function fmtDurReadable(ms) {
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'Under 1 min';
+  if (m >= 60) { const h=Math.floor(m/60); return `${h}h ${m%60}m`; }
+  return `${m} min`;
+}
+function escapeHtml(str) {
+  const map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+  return String(str).replace(/[&<>"']/g, c => map[c]);
+}
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+}
+function getDog(id) { return DOGS.find(d => d.id === id); }
+function getDogStatus(dogId) {
+  const w = state.walks[dogId];
+  if (!w) return 'waiting';
+  if (w.endTime) return 'done';
+  const elapsed = Date.now() - w.startTime;
+  return elapsed > 45 * 60 * 1000 ? 'overdue' : 'out';
+}
+function calcDistance(coords) {
+  if (coords.length < 2) return 0;
+  let d = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const [lat1,lon1] = coords[i-1];
+    const [lat2,lon2] = coords[i];
+    const R = 6371000;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    d += R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  return d * 3.28084; // meters -> feet
+}
+
+/* ── TOAST ─────────────────────────────────────────── */
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── CLOCK ─────────────────────────────────────────── */
+function updateClocks() {
+  const now = fmtClock(new Date());
+  ['clock','clock-qr','clock-report'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = now;
+  });
+}
+setInterval(updateClocks, 1000);
+updateClocks();
+
+/* ── SCREEN ROUTER ─────────────────────────────────── */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(`screen-${id}`);
+  if (target) {
+    target.classList.add('active');
+    target.scrollTop = 0;
+  }
+
+  const nav = document.getElementById('bottom-nav');
+  const walkScreen = id === 'walk';
+  const loginScreen = id === 'login';
+
+  nav.classList.toggle('hidden', loginScreen || walkScreen);
+
+  // Update nav button states
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.removeAttribute('aria-current');
+  });
+
+  const navMap = { dashboard:'nav-home', qr:'nav-qr', report:'nav-report' };
+  if (navMap[id]) {
+    const navBtn = document.getElementById(navMap[id]);
+    if (navBtn) { navBtn.classList.add('active'); navBtn.setAttribute('aria-current','page'); }
+  }
+}
+
+/* ── LOGIN ─────────────────────────────────────────── */
+function renderVolGrid() {
+  const grid = document.getElementById('vol-grid');
+  grid.innerHTML = '';
+  VOLUNTEERS.forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'vol-btn';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', `Select ${name}`);
+    btn.innerHTML = `<div class="vol-avatar">${escapeHtml(getInitials(name))}</div><span>${escapeHtml(name)}</span>`;
+    btn.addEventListener('click', () => selectVolunteer(name));
+    grid.appendChild(btn);
+  });
+}
+
+function selectVolunteer(name) {
+  state.volunteer = name;
+  document.querySelectorAll('.vol-btn').forEach(b => {
+    const isChosen = b.querySelector('span').textContent === name;
+    b.classList.toggle('chosen', isChosen);
+    b.setAttribute('aria-pressed', String(isChosen));
+  });
+  document.getElementById('btn-start-shift').disabled = false;
+}
+
+document.getElementById('btn-add-name').addEventListener('click', () => {
+  const input = document.getElementById('custom-name');
+  const name = input.value.trim();
+  if (!name) return;
+  selectVolunteer(name);
+  input.value = '';
+  showToast(`Hi, ${name}!`, 'success');
+});
+
+document.getElementById('custom-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-add-name').click();
+});
+
+document.getElementById('btn-start-shift').addEventListener('click', () => {
+  if (!state.volunteer) return;
+  enterApp();
+});
+
+document.getElementById('btn-change-vol').addEventListener('click', () => {
+  showScreen('login');
+});
+
+function enterApp() {
+  saveState();
+  const volName = document.getElementById('vol-name-display');
+  const volAvatar = document.getElementById('vol-avatar2');
+  volName.textContent = state.volunteer;
+  volAvatar.textContent = getInitials(state.volunteer);
+  document.getElementById('report-date-sub').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  showScreen('dashboard');
+  renderDogs();
+  generateQrCodes();
+  renderReport();
+}
+
+/* ── FILTER ─────────────────────────────────────────── */
+document.querySelectorAll('.filter-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-pressed','false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-pressed','true');
+    state.filter = btn.dataset.filter;
+    const labels = {all:'All Dogs',waiting:'Not Yet Walked',out:'Currently Out',done:'Walk Completed',run:'Run Dogs',outside:'Outside Dogs'};
+    document.getElementById('section-heading').textContent = labels[state.filter] || 'Dogs';
+    renderDogs();
+  });
+});
+
+function filteredDogs() {
+  const f = state.filter;
+  if (f === 'waiting') return DOGS.filter(d => getDogStatus(d.id) === 'waiting');
+  if (f === 'out')     return DOGS.filter(d => ['out','overdue'].includes(getDogStatus(d.id)));
+  if (f === 'done')    return DOGS.filter(d => getDogStatus(d.id) === 'done');
+  if (f === 'run')     return DOGS.filter(d => d.type === 'run');
+  if (f === 'outside') return DOGS.filter(d => d.type === 'outside');
+  return DOGS;
+}
+
+/* ── RENDER DOGS ─────────────────────────────────────── */
+function renderDogs() {
+  const list = document.getElementById('dog-list');
+  const dogs = filteredDogs();
+  list.innerHTML = '';
+
+  updateStats();
+  updateNavBadges();
+
+  if (dogs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><p>No dogs in this category</p></div>`;
+    return;
+  }
+
+  dogs.forEach(dog => {
+    const status = getDogStatus(dog.id);
+    const walk = state.walks[dog.id];
+    list.appendChild(buildDogCard(dog, status, walk));
+  });
+}
+
+function buildDogCard(dog, status, walk) {
+  const card = document.createElement('article');
+  card.className = `dog-card s-${status}`;
+  card.setAttribute('role','listitem');
+  card.setAttribute('aria-label', `${dog.name}, ${dog.breed}`);
+
+  let statusLine = 'Ready to be walked';
+  let btnLabel = 'Start Walk';
+  let btnClass = 'btn-walk';
+  let btnIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+
+  if (status === 'out') {
+    const elapsed = fmtDur(Date.now() - walk.startTime);
+    statusLine = `Out with ${escapeHtml(walk.volunteer)} — ${elapsed}`;
+    btnLabel = 'Return Dog'; btnClass = 'btn-return';
+    btnIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
+  } else if (status === 'overdue') {
+    const elapsed = fmtDur(Date.now() - walk.startTime);
+    statusLine = `⚠ OVERDUE — Out ${elapsed}`;
+    btnLabel = 'Return Dog Now'; btnClass = 'btn-overdue';
+    btnIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  } else if (status === 'done') {
+    statusLine = `Done — ${fmtDurReadable(walk.duration)} by ${escapeHtml(walk.volunteer)}`;
+    btnLabel = 'Walk Completed'; btnClass = 'btn-done';
+    btnIcon = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+  }
+
+  const statusDot = { waiting:'', out:'', done:'', overdue:'' };
+
+  card.innerHTML = `
+    <div class="dog-card-body">
+      <div class="dog-icon" aria-hidden="true">${dog.emoji}</div>
+      <div class="dog-info">
+        <div class="dog-name">${escapeHtml(dog.name)}</div>
+        <div class="dog-breed">${escapeHtml(dog.breed)}</div>
+        <div class="dog-meta">
+          <span class="dog-type-pill ${dog.type === 'run' ? 'pill-run' : 'pill-outside'}">
+            ${dog.type === 'run' ? 'Run Dog' : 'Outside Dog'}
+          </span>
+          <span class="dog-kennel-pill">${escapeHtml(dog.kennel)}</span>
+        </div>
+        <div class="dog-status-line" id="statusline-${dog.id}">${statusLine}</div>
+      </div>
+    </div>
+    <div class="dog-action-area">
+      <button class="dog-action-btn ${btnClass}" ${status === 'done' ? 'disabled aria-disabled="true"' : ''}
+        aria-label="${btnLabel} for ${dog.name}"
+        data-dogid="${dog.id}" data-status="${status}">
+        ${btnIcon}
+        ${escapeHtml(btnLabel)}
+      </button>
+    </div>
+  `;
+
+  card.querySelector('.dog-action-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleDogAction(dog.id, status);
+  });
+
+  card.addEventListener('click', () => {
+    if (['out','overdue'].includes(getDogStatus(dog.id))) {
+      openWalkScreen(dog.id);
+    } else {
+      handleDogAction(dog.id, getDogStatus(dog.id));
+    }
+  });
+
+  return card;
+}
+
+/* ── LIVE TIMERS ─────────────────────────────────────── */
+let liveTimerInterval = null;
+function startLiveTimers() {
+  if (liveTimerInterval) clearInterval(liveTimerInterval);
+  liveTimerInterval = setInterval(() => {
+    DOGS.forEach(dog => {
+      const status = getDogStatus(dog.id);
+      if (!['out','overdue'].includes(status)) return;
+      const walk = state.walks[dog.id];
+      if (!walk) return;
+      const el = document.getElementById(`statusline-${dog.id}`);
+      if (el) {
+        const elapsed = fmtDur(Date.now() - walk.startTime);
+        const newStatus = getDogStatus(dog.id);
+        if (newStatus === 'overdue') {
+          el.textContent = `⚠ OVERDUE — Out ${elapsed}`;
+          const card = el.closest('.dog-card');
+          if (card && !card.classList.contains('s-overdue')) {
+            card.className = card.className.replace('s-out','s-overdue');
+            const btn = card.querySelector('.dog-action-btn');
+            if (btn) { btn.className = `dog-action-btn btn-overdue`; btn.textContent = 'Return Dog Now'; }
+          }
+        } else {
+          el.textContent = `Out with ${walk.volunteer} — ${elapsed}`;
+        }
+      }
+    });
+    updateStats();
+    updateNavBadges();
+    checkAlerts();
+  }, 5000);
+}
+
+/* ── STATS & BADGES ────────────────────────────────── */
+function updateStats() {
+  const counts = { waiting:0, out:0, done:0, overdue:0 };
+  DOGS.forEach(d => {
+    const s = getDogStatus(d.id);
+    if (s === 'out' || s === 'overdue') counts.out++;
+    else counts[s] = (counts[s] || 0) + 1;
+  });
+  document.getElementById('stat-waiting').textContent = counts.waiting || 0;
+  document.getElementById('stat-out').textContent     = counts.out || 0;
+  document.getElementById('stat-done').textContent    = counts.done || 0;
+
+  // Filter counts
+  document.getElementById('fc-all').textContent     = DOGS.length;
+  document.getElementById('fc-waiting').textContent = counts.waiting || 0;
+  document.getElementById('fc-out').textContent     = counts.out || 0;
+  document.getElementById('fc-done').textContent    = counts.done || 0;
+}
+
+function updateNavBadges() {
+  const outCount = DOGS.filter(d => ['out','overdue'].includes(getDogStatus(d.id))).length;
+  const overdueCount = DOGS.filter(d => getDogStatus(d.id) === 'overdue').length;
+
+  const badgeActive = document.getElementById('nav-badge-active');
+  const badgeHome   = document.getElementById('nav-badge-home');
+
+  if (outCount > 0) {
+    badgeActive.textContent = outCount;
+    badgeActive.classList.remove('hidden');
+    badgeActive.setAttribute('aria-label', `${outCount} dogs out`);
+  } else {
+    badgeActive.classList.add('hidden');
+  }
+  if (overdueCount > 0) {
+    badgeHome.textContent = overdueCount;
+    badgeHome.classList.remove('hidden');
+    badgeHome.setAttribute('aria-label', `${overdueCount} overdue dogs`);
+  } else {
+    badgeHome.classList.add('hidden');
+  }
+}
+
+let lastAlertTime = 0;
+function checkAlerts() {
+  const overdue = DOGS.filter(d => getDogStatus(d.id) === 'overdue');
+  const alertBar = document.getElementById('alert-bar');
+  if (overdue.length > 0) {
+    alertBar.classList.remove('hidden');
+    document.getElementById('alert-bar-text').textContent =
+      `${overdue.map(d => d.name).join(', ')} ${overdue.length === 1 ? 'has' : 'have'} been out over 45 minutes!`;
+    if (Date.now() - lastAlertTime > 5 * 60 * 1000) {
+      showToast(`⚠ ${overdue[0].name} has been out over 45 min!`, 'danger');
+      lastAlertTime = Date.now();
+    }
+  } else {
+    alertBar.classList.add('hidden');
+  }
+}
+
+/* ── DOG ACTIONS ─────────────────────────────────────── */
+function handleDogAction(dogId, status) {
+  if (!state.volunteer) { showToast('Please select your name first'); return; }
+  if (status === 'done') return;
+  if (status === 'waiting') openStartModal(dogId);
+  else if (['out','overdue'].includes(status)) openReturnModal(dogId);
+}
+
+/* Start Walk Modal */
+function openStartModal(dogId) {
+  state.pendingActionDogId = dogId;
+  const dog = getDog(dogId);
+  const modal = document.getElementById('modal-start');
+
+  document.getElementById('mstart-dog-hero').innerHTML = `
+    <div class="mh-icon" aria-hidden="true">${dog.emoji}</div>
+    <div><div class="mh-name">${escapeHtml(dog.name)}</div><div class="mh-breed">${escapeHtml(dog.breed)}</div></div>
+  `;
+  document.getElementById('mstart-vol').textContent    = state.volunteer;
+  document.getElementById('mstart-time').textContent   = fmtClock(new Date());
+  document.getElementById('mstart-kennel').textContent = dog.kennel;
+
+  modal.classList.add('open');
+  document.getElementById('mstart-confirm').focus();
+}
+
+document.getElementById('mstart-confirm').addEventListener('click', () => {
+  const dogId = state.pendingActionDogId;
+  document.getElementById('modal-start').classList.remove('open');
+  startWalk(dogId);
+});
+document.getElementById('mstart-cancel').addEventListener('click', () => {
+  document.getElementById('modal-start').classList.remove('open');
+  state.pendingActionDogId = null;
+});
+document.getElementById('modal-start').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+/* Return Dog Modal */
+function openReturnModal(dogId) {
+  state.pendingActionDogId = dogId;
+  const dog = getDog(dogId);
+  const walk = state.walks[dogId];
+  const modal = document.getElementById('modal-return');
+
+  document.getElementById('mreturn-dog-hero').innerHTML = `
+    <div class="mh-icon" aria-hidden="true">${dog.emoji}</div>
+    <div><div class="mh-name">${escapeHtml(dog.name)}</div><div class="mh-breed">${escapeHtml(dog.breed)}</div></div>
+  `;
+  document.getElementById('mreturn-vol').textContent    = walk?.volunteer || '—';
+  document.getElementById('mreturn-dur').textContent    = walk ? fmtDurReadable(Date.now() - walk.startTime) : '—';
+  document.getElementById('mreturn-kennel').textContent = dog.kennel;
+
+  modal.classList.add('open');
+  document.getElementById('mreturn-confirm').focus();
+}
+
+document.getElementById('mreturn-confirm').addEventListener('click', () => {
+  const dogId = state.pendingActionDogId;
+  document.getElementById('modal-return').classList.remove('open');
+  returnDog(dogId);
+});
+document.getElementById('mreturn-cancel').addEventListener('click', () => {
+  document.getElementById('modal-return').classList.remove('open');
+  state.pendingActionDogId = null;
+});
+document.getElementById('modal-return').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+/* ── WALK LOGIC ──────────────────────────────────────── */
+function startWalk(dogId) {
+  const dog = getDog(dogId);
+  state.walks[dogId] = {
+    volunteer: state.volunteer,
+    startTime: Date.now(),
+    endTime: null,
+    duration: null,
+    notes: '',
+    distance: 0,
+  };
+  state.activeWalkDogId = dogId;
+  saveState();
+  renderDogs();
+  renderReport();
+  showToast(`${dog.name} is out for a walk!`, 'success');
+  openWalkScreen(dogId);
+}
+
+function returnDog(dogId) {
+  const dog = getDog(dogId);
+  const walk = state.walks[dogId];
+  if (!walk) return;
+  walk.endTime = Date.now();
+  walk.duration = walk.endTime - walk.startTime;
+  if (state.gpsCoords.length > 1 && state.activeWalkDogId === dogId) {
+    walk.distance = Math.round(calcDistance(state.gpsCoords));
+  }
+  state.history.push({ dogId, dog: { ...dog }, volunteer: walk.volunteer, startTime: walk.startTime, endTime: walk.endTime, duration: walk.duration, notes: walk.notes, distance: walk.distance });
+  if (state.activeWalkDogId === dogId) {
+    state.activeWalkDogId = null;
+    stopWalkTimers();
+    showScreen('dashboard');
+    startLiveTimers();
+  }
+  saveState();
+  renderDogs();
+  renderReport();
+  showToast(`${dog.name} returned after ${fmtDurReadable(walk.duration)}!`, 'success');
+  checkAlerts();
+}
+
+/* ── WALK SCREEN ─────────────────────────────────────── */
+function openWalkScreen(dogId) {
+  const dog = getDog(dogId);
+  const walk = state.walks[dogId];
+
+  document.getElementById('walk-dog-icon').textContent   = dog.emoji;
+  document.getElementById('walk-dog-name').textContent   = dog.name;
+  document.getElementById('walk-dog-breed').textContent  = dog.breed;
+  document.getElementById('walk-header-sub').textContent = `${dog.name} — ${dog.kennel}`;
+  document.getElementById('walk-start-time').textContent = walk ? fmt12(walk.startTime) : '—';
+  document.getElementById('walk-volunteer-detail').textContent = walk?.volunteer || '—';
+  document.getElementById('walk-kennel').textContent     = dog.kennel;
+  document.getElementById('walk-notes').value = walk?.notes || '';
+
+  state.activeWalkDogId = dogId;
+  showScreen('walk');
+  startWalkTimers(dogId);
+  startGPS();
+}
+
+function startWalkTimers(dogId) {
+  stopWalkTimers();
+  const walk = state.walks[dogId];
+  if (!walk) return;
+
+  function tick() {
+    const elapsed = Date.now() - walk.startTime;
+    const display = document.getElementById('walk-timer');
+    if (!display) return;
+    display.textContent = fmtDur(elapsed);
+    const min = elapsed / 60000;
+    display.className = 'timer-display' + (min >= 45 ? ' overdue' : min >= 30 ? ' warn' : '');
+
+    // Update distance
+    if (state.gpsCoords.length > 1) {
+      const ft = Math.round(calcDistance(state.gpsCoords));
+      document.getElementById('walk-distance').textContent = ft > 5280
+        ? `${(ft/5280).toFixed(1)} mi`
+        : `${ft} ft`;
+    }
+  }
+  tick();
+  state.timerInterval = setInterval(tick, 1000);
+}
+
+function stopWalkTimers() {
+  if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
+  if (state.gpsInterval)   { clearInterval(state.gpsInterval);   state.gpsInterval = null; }
+}
+
+function startGPS() {
+  state.gpsCoords = [];
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.gpsCoords.push([pos.coords.latitude, pos.coords.longitude]);
+      const el = document.getElementById('walk-distance');
+      if (el) { el.classList.add('gps-active'); el.textContent = '0 ft'; }
+    },
+    () => {},
+    { enableHighAccuracy: true }
+  );
+  state.gpsInterval = setInterval(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => state.gpsCoords.push([pos.coords.latitude, pos.coords.longitude]),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+  }, 10000);
+}
+
+/* Walk screen buttons */
+document.getElementById('btn-walk-back').addEventListener('click', () => {
+  if (state.activeWalkDogId) {
+    stopWalkTimers();
+    showScreen('dashboard');
+    startLiveTimers();
+  }
+});
+
+document.getElementById('btn-return-dog').addEventListener('click', () => {
+  const dogId = state.activeWalkDogId;
+  if (!dogId) return;
+  // Save notes
+  const notes = document.getElementById('walk-notes').value.trim();
+  if (state.walks[dogId]) state.walks[dogId].notes = notes;
+  openReturnModal(dogId);
+  showScreen('dashboard');
+});
+
+/* ── QR CODES ─────────────────────────────────────────── */
+function generateQrCodes() {
+  const grid = document.getElementById('qr-grid');
+  grid.innerHTML = '';
+  DOGS.forEach(dog => {
+    const tile = document.createElement('div');
+    tile.className = 'qr-tile';
+    const canvas = document.createElement('canvas');
+    tile.appendChild(canvas);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'qr-dog-name';
+    nameEl.textContent = dog.name;
+    tile.appendChild(nameEl);
+
+    const idEl = document.createElement('div');
+    idEl.className = 'qr-dog-id';
+    idEl.textContent = `ID: DOG-${String(dog.id).padStart(3,'0')}`;
+    tile.appendChild(idEl);
+
+    const kennelEl = document.createElement('div');
+    kennelEl.className = 'qr-dog-kennel';
+    kennelEl.textContent = `Kennel ${dog.kennel}`;
+    tile.appendChild(kennelEl);
+
+    grid.appendChild(tile);
+
+    if (typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(canvas, `SHELTER-DOG-${dog.id}-${dog.name.toUpperCase()}`, {
+        width: 130, margin: 1,
+        color: { dark:'#1B4F8A', light:'#FFFFFF' }
+      }, err => { if (err) canvas.style.display = 'none'; });
+    }
+  });
+}
+
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+/* ── REPORT ───────────────────────────────────────────── */
+function renderReport() {
+  // Summary tiles
+  const completedWalks = state.history.filter(h => h.endTime);
+  const totalDuration = completedWalks.reduce((sum, h) => sum + (h.duration || 0), 0);
+  const avgDuration   = completedWalks.length ? Math.round(totalDuration / completedWalks.length / 60000) : 0;
+  const walkedDogs    = new Set(completedWalks.map(h => h.dogId)).size;
+  const outNow        = DOGS.filter(d => ['out','overdue'].includes(getDogStatus(d.id))).length;
+
+  const summary = document.getElementById('report-summary');
+  summary.innerHTML = `
+    <div class="report-tile">
+      <div class="rt-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Walks Done
+      </div>
+      <div class="rt-value">${completedWalks.length}</div>
+      <div class="rt-sub">${walkedDogs} unique dogs</div>
+    </div>
+    <div class="report-tile">
+      <div class="rt-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Out Now
+      </div>
+      <div class="rt-value">${outNow}</div>
+      <div class="rt-sub">Currently walking</div>
+    </div>
+    <div class="report-tile">
+      <div class="rt-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Avg Walk
+      </div>
+      <div class="rt-value">${avgDuration > 0 ? avgDuration + 'm' : '—'}</div>
+      <div class="rt-sub">Per dog</div>
+    </div>
+    <div class="report-tile">
+      <div class="rt-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neutral)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Not Walked
+      </div>
+      <div class="rt-value">${DOGS.length - walkedDogs - outNow}</div>
+      <div class="rt-sub">Still waiting</div>
+    </div>
+  `;
+
+  // Log
+  const log = document.getElementById('report-log');
+  log.innerHTML = '';
+
+  // Active walks first
+  DOGS.filter(d => ['out','overdue'].includes(getDogStatus(d.id))).forEach(dog => {
+    const walk = state.walks[dog.id];
+    const card = document.createElement('div');
+    card.className = 'walk-log-card in-progress';
+    card.innerHTML = `
+      <div class="wl-icon" aria-hidden="true">${dog.emoji}</div>
+      <div class="wl-info">
+        <div class="wl-name">${escapeHtml(dog.name)}</div>
+        <div class="wl-vol">With ${escapeHtml(walk.volunteer)}</div>
+        <div class="wl-time">Out since ${fmt12(walk.startTime)}</div>
+      </div>
+      <div class="wl-dur">In Progress</div>
+    `;
+    log.appendChild(card);
+  });
+
+  // Completed walks
+  [...state.history].reverse().forEach(entry => {
+    const card = document.createElement('div');
+    card.className = 'walk-log-card';
+    card.innerHTML = `
+      <div class="wl-icon" aria-hidden="true">${entry.dog?.emoji || '🐶'}</div>
+      <div class="wl-info">
+        <div class="wl-name">${escapeHtml(entry.dog?.name || 'Dog')}</div>
+        <div class="wl-vol">By ${escapeHtml(entry.volunteer)}</div>
+        <div class="wl-time">${fmt12(entry.startTime)} – ${fmt12(entry.endTime)}${entry.distance ? ` · ${entry.distance} ft` : ''}</div>
+        ${entry.notes ? `<div class="wl-time" style="font-style:italic">"${escapeHtml(entry.notes)}"</div>` : ''}
+      </div>
+      <div class="wl-dur">${fmtDurReadable(entry.duration)}</div>
+    `;
+    log.appendChild(card);
+  });
+
+  if (state.history.length === 0 && DOGS.filter(d => ['out','overdue'].includes(getDogStatus(d.id))).length === 0) {
+    log.innerHTML = `<div class="empty-state" style="padding:30px 20px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No walks recorded yet today</p></div>`;
+  }
+}
+
+/* Export report */
+document.getElementById('btn-export').addEventListener('click', () => {
+  const date = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  let text = `YONKERS ANIMAL SHELTER — Walk Report\n${date}\n${'='.repeat(40)}\n\n`;
+
+  const completed = state.history.filter(h => h.endTime);
+  text += `Summary: ${completed.length} walks completed\n\n`;
+  text += `Walk Log:\n`;
+
+  completed.forEach(e => {
+    text += `• ${e.dog?.name || 'Dog'} — ${e.volunteer} — ${fmt12(e.startTime)} to ${fmt12(e.endTime)} (${fmtDurReadable(e.duration)})`;
+    if (e.notes) text += `\n  Note: "${e.notes}"`;
+    text += '\n';
+  });
+
+  const unwalkd = DOGS.filter(d => getDogStatus(d.id) === 'waiting');
+  if (unwalkd.length) {
+    text += `\nNot walked today: ${unwalkd.map(d => d.name).join(', ')}\n`;
+  }
+
+  const blob = new Blob([text], { type:'text/plain' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `walk-report-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Report downloaded!', 'success');
+});
+
+/* ── BOTTOM NAV ─────────────────────────────────────────── */
+document.getElementById('nav-home').addEventListener('click', () => {
+  showScreen('dashboard');
+  renderDogs();
+});
+document.getElementById('nav-active').addEventListener('click', () => {
+  // Jump to "out now" filter on dashboard
+  document.querySelectorAll('.filter-chip').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-pressed','false');
+  });
+  const chip = document.querySelector('.filter-chip[data-filter="out"]');
+  if (chip) { chip.classList.add('active'); chip.setAttribute('aria-pressed','true'); }
+  state.filter = 'out';
+  document.getElementById('section-heading').textContent = 'Currently Out';
+  showScreen('dashboard');
+  renderDogs();
+});
+document.getElementById('nav-qr').addEventListener('click', () => {
+  showScreen('qr');
+});
+document.getElementById('nav-report').addEventListener('click', () => {
+  renderReport();
+  showScreen('report');
+});
+
+/* ── INIT ───────────────────────────────────────────────── */
+function init() {
+  loadState();
+  renderVolGrid();
+
+  // Resume if volunteer was set and there are active walks
+  if (state.volunteer && Object.values(state.walks).some(w => !w.endTime)) {
+    // Re-enter app with existing session
+    const btn = document.getElementById('btn-start-shift');
+    btn.disabled = false;
+    // Pre-select volunteer
+    const volBtns = document.querySelectorAll('.vol-btn');
+    volBtns.forEach(b => {
+      if (b.querySelector('span')?.textContent === state.volunteer) {
+        b.classList.add('chosen');
+        b.setAttribute('aria-pressed','true');
+      }
+    });
+  }
+
+  // Keyboard: close modals with Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+
+  startLiveTimers();
+}
+
+init();
+</script>
+</body>
+</html>
