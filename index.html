@@ -1415,17 +1415,20 @@ function selectVolunteer(name) {
   document.getElementById('btn-start-shift').disabled = false;
 }
 
-document.getElementById('btn-add-name').addEventListener('click', () => {
+function submitCustomName(startShift = false) {
   const input = document.getElementById('custom-name');
   const name = input.value.trim();
   if (!name) return;
+  try { localStorage.setItem('shelter-custom-name', name); } catch(e) {}
   selectVolunteer(name);
-  input.value = '';
   showToast(`Hi, ${name}!`, 'success');
-});
+  if (startShift) enterApp();
+}
+
+document.getElementById('btn-add-name').addEventListener('click', () => submitCustomName(false));
 
 document.getElementById('custom-name').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('btn-add-name').click();
+  if (e.key === 'Enter') submitCustomName(true);
 });
 
 document.getElementById('btn-start-shift').addEventListener('click', () => {
@@ -2063,6 +2066,12 @@ function init() {
       }
     });
   }
+
+  // Pre-fill saved custom name
+  try {
+    const saved = localStorage.getItem('shelter-custom-name');
+    if (saved) document.getElementById('custom-name').value = saved;
+  } catch(e) {}
 
   // Keyboard: close modals with Escape
   document.addEventListener('keydown', e => {
